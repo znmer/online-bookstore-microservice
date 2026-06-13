@@ -1,0 +1,52 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings
+.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Node
+node_modules/
+package-lock.json
+
+# Temp
+work/
+temp/
+*.tmp
+~$*
+
+# MySQL
+derby.log
+
+# Large infra binaries (download separately - exceed GitHub 100MB limit)
+infra/nacos/nacos/target/nacos-server.jar
+infra/sentinel-dashboard*.jar
+infra/zipkin-server*.jar
+infra/nacos-server-*.zip
+infra/otp_win64_*
+infra/erlang/
+infra/rabbitmq-server-windows-*.zip
+
+# Scripts (user-specific temp)
+final-mysql-setup.js
+fix-mysql-auth.js
+reset-mysql-password.js
+restart-mysql.js
+setup-mysql.js
+temp-fix.sql
+read-docx.js

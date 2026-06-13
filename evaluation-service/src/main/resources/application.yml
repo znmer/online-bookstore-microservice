@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: evaluation-service
+  config:
+    import: optional:nacos:evaluation-service.yaml
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  cloud:
+    function:
+      definition: orderEventInput
+    nacos:
+      config:
+        server-addr: 127.0.0.1:8848
+        file-extension: yaml
+        refresh-enabled: true
+        shared-configs:
+          - data-id: common.yaml
+            refresh: true
+      discovery:
+        server-addr: 127.0.0.1:8848
+    sentinel:
+      transport:
+        dashboard: 127.0.0.1:8085
+      eager: true
+    stream:
+      default:
+        group: evaluation-group
+      bindings:
+        orderEventInput-in-0:
+          destination: order-event-topic
+          content-type: application/json
+      rabbit:
+        bindings:
+          orderEventInput-in-0:
+            consumer:
+              binding-routing-key: evaluation.#
+  datasource:
+    url: jdbc:mysql://localhost:3307/bookstore_evaluation?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+server:
+  port: 8084
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans

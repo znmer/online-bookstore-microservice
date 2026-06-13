@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "docx": "^9.7.1",
+    "puppeteer": "^25.1.0"
+  }
+}

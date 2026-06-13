@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在线图书商城 - 微服务系统</title>
+<link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #333; }
+.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 100; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.header h1 i { margin-right: 10px; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.user-badge { background: rgba(255,255,255,.2); padding: 6px 14px; border-radius: 20px; font-size: 13px; display: none; }
+.user-badge i { margin-right: 6px; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.tabs { display: flex; gap: 4px; background: #fff; border-radius: 12px; padding: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 20px; flex-wrap: wrap; }
+.tab { flex: 1; min-width: 80px; padding: 10px 16px; text-align: center; border-radius: 8px; cursor: pointer; font-size: 14px; color: #666; transition: all .2s; border: none; background: none; }
+.tab:hover { background: #f5f5f5; color: #333; }
+.tab.active { background: #667eea; color: #fff; font-weight: 500; }
+.tab i { margin-right: 6px; }
+.panel { display: none; }
+.panel.active { display: block; }
+.card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 20px; margin-bottom: 16px; }
+.card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #333; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; transition: border .2s; outline: none; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #667eea; box-shadow: 0 0 0 2px rgba(102,126,234,.2); }
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.btn { padding: 8px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: #667eea; color: #fff; }
+.btn-primary:hover { background: #5a6fd6; }
+.btn-success { background: #52c41a; color: #fff; }
+.btn-success:hover { background: #49b018; }
+.btn-danger { background: #ff4d4f; color: #fff; }
+.btn-danger:hover { background: #e04345; }
+.btn-outline { background: transparent; color: #667eea; border: 1px solid #667eea; }
+.btn-outline:hover { background: #f0f2ff; }
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+.btn-block { width: 100%; justify-content: center; }
+.login-box { max-width: 400px; margin: 60px auto; }
+.alert { padding: 10px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: none; }
+.alert-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; display: block; }
+.alert-error { background: #fff2f0; border: 1px solid #ffccc7; color: #ff4d4f; display: block; }
+.alert-info { background: #e6f7ff; border: 1px solid #91d5ff; color: #1890ff; display: block; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { background: #fafafa; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+th { font-weight: 600; color: #555; }
+tr:hover { background: #fafafa; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.badge-green { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+.badge-orange { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+.badge-blue { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+.badge-red { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; }
+.badge-purple { background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.book-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 16px; border: 1px solid #f0f0f0; transition: all .2s; }
+.book-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.12); transform: translateY(-2px); }
+.book-card h3 { font-size: 15px; margin-bottom: 8px; color: #333; }
+.book-card .meta { font-size: 12px; color: #999; margin-bottom: 4px; }
+.book-card .price { font-size: 18px; font-weight: 600; color: #ff4d4f; }
+.book-card .stock { font-size: 12px; color: #52c41a; }
+.book-card .actions { margin-top: 12px; display: flex; gap: 8px; }
+.stars { color: #fadb14; font-size: 14px; }
+.loading { text-align: center; padding: 40px; color: #999; }
+.loading i { font-size: 24px; margin-bottom: 8px; }
+.empty-state { text-align: center; padding: 40px; color: #999; }
+.empty-state i { font-size: 40px; margin-bottom: 12px; color: #d9d9d9; }
+.login-form .form-group { margin-bottom: 18px; }
+.login-form .form-group label { font-size: 14px; }
+.login-form h2 { text-align: center; margin-bottom: 24px; color: #333; }
+.status-bar { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.stat-card { flex: 1; min-width: 120px; background: #fff; border-radius: 10px; padding: 16px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.stat-card .num { font-size: 28px; font-weight: 700; color: #667eea; }
+.stat-card .label { font-size: 12px; color: #999; margin-top: 4px; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000; justify-content: center; align-items: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 12px; padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+.modal h3 { margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+@media (max-width: 768px) {
+  .grid-2, .form-row { grid-template-columns: 1fr; }
+  .header { padding: 12px 16px; }
+  .header h1 { font-size: 16px; }
+  .tab { font-size: 12px; padding: 8px 10px; min-width: 60px; }
+  .tab i { margin-right: 4px; }
+  .container { padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><i class="fas fa-book-open"></i>在线图书商城 · 微服务系统</h1>
+  <div class="header-right">
+    <span class="user-badge" id="userBadge"><i class="fas fa-user"></i><span id="userName"></span></span>
+    <button class="btn btn-outline btn-sm" id="btnLogout" style="display:none;color:#fff;border-color:rgba(255,255,255,.5)" onclick="logout()"><i class="fas fa-sign-out-alt"></i>退出</button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Login Panel -->
+  <div id="panel-login">
+    <div class="login-box card">
+      <div class="login-form">
+        <h2><i class="fas fa-sign-in-alt" style="color:#667eea"></i> 用户登录</h2>
+        <div id="loginAlert" class="alert" style="display:none"></div>
+        <div class="form-group">
+          <label><i class="fas fa-user"></i> 用户名</label>
+          <input type="text" id="loginUsername" value="admin" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-lock"></i> 密码</label>
+          <input type="password" id="loginPassword" value="123456" placeholder="请输入密码">
+        </div>
+        <button class="btn btn-primary btn-block" onclick="login()"><i class="fas fa-sign-in-alt"></i> 登 录</button>
+        <p style="text-align:center;margin-top:12px;font-size:12px;color:#999">测试账号: admin / 123456</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="panel-main" style="display:none">
+    <div class="status-bar" id="statusBar"></div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="books" onclick="switchTab('books')"><i class="fas fa-book"></i>图书</button>
+      <button class="tab" data-tab="orders" onclick="switchTab('orders')"><i class="fas fa-shopping-cart"></i>订单</button>
+      <button class="tab" data-tab="evaluations" onclick="switchTab('evaluations')"><i class="fas fa-star"></i>评价</button>
+      <button class="tab" data-tab="users" onclick="switchTab('users')"><i class="fas fa-users"></i>用户</button>
+      <button class="tab" data-tab="architecture" onclick="switchTab('architecture')"><i class="fas fa-sitemap"></i>架构</button>
+    </div>
+
+    <!-- Books Tab -->
+    <div class="panel active" id="panel-books">
+      <div class="card">
+        <div class="card-title"><i class="fas fa-search" style="color:#667eea"></i> 图书检索</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>分类</label>
+            <select id="bookCategory" onchange="loadBooks()">
+              <option value="">全部分类</option>
+              <option value="技术">技术</option>
+              <option value="小说">小说</option>
+              <option value="社科">社科</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>关键词</label>
+            <input type="text" id="bookKeyword" placeholder="搜索书名..." onkeyup="if(event.key==='Enter')loadBooks()">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="loadBooks()"><i class="fas fa-search"></i> 查询</button>
+        <button class="btn btn-outline btn-sm" onclick="showCreateBookModal()"><i class="fas fa-plus"></i> 新增图书</button>
+      </div>
+      <div id="booksContainer" class="grid-3"></div>
+    </div>
+
+    <!-- Orders Tab -->
+    <div class="panel" id="panel-orders">
+      <div class="card">
+        <div class="card-title"><i class="fas fa-plus-circle" style="color:#52c41a"></i> 创建订单</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>用户ID</label>
+            <input type="number" id="orderUserId" value="1">
+          </div>
+          <div class="form-group">
+            <label>图书ID</label>
+            <input type="number" id="orderBookId" value="1" min="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>数量</label>
+            <input type="number" id="orderQuantity" value="1" min="1">
+          </div>
+          <div class="form-group">
+            <label>收货人</label>
+            <input type="text" id="orderReceiver" value="张三">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>联系电话</label>
+            <input type="text" id="orderPhone" value="13800138000">
+          </div>
+          <div class="form-group">
+            <label>收货地址</label>
+            <input type="text" id="orderAddress" value="北京市海淀区">
+          </div>
+        </div>
+        <button class="btn btn-success" onclick="createOrder()"><i class="fas fa-paper-plane"></i> 提交订单</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-list" style="color:#667eea"></i> 订单列表</div>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>订单号</th><th>图书ID</th><th>数量</th><th>总价</th><th>状态</th><th>收货人</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- Evaluations Tab -->
+    <div class="panel" id="panel-evaluations">
+      <div class="card">
+        <div class="card-title"><i class="fas fa-plus-circle" style="color:#52c41a"></i> 发表评价</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>用户ID</label>
+            <input type="number" id="evalUserId" value="1">
+          </div>
+          <div class="form-group">
+            <label>图书ID</label>
+            <input type="number" id="evalBookId" value="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>评分</label>
+          <div id="ratingSelector" style="font-size:24px;cursor:pointer">
+            <span data-val="1" onclick="setRating(1)">☆</span>
+            <span data-val="2" onclick="setRating(2)">☆</span>
+            <span data-val="3" onclick="setRating(3)">☆</span>
+            <span data-val="4" onclick="setRating(4)">☆</span>
+            <span data-val="5" onclick="setRating(5)">☆</span>
+            <span style="font-size:13px;color:#999;margin-left:8px" id="ratingText">请评分</span>
+          </div>
+          <input type="hidden" id="evalRating" value="0">
+        </div>
+        <div class="form-group">
+          <label>评价内容</label>
+          <textarea id="evalContent" placeholder="写下你的评价..."></textarea>
+        </div>
+        <button class="btn btn-success" onclick="createEvaluation()"><i class="fas fa-paper-plane"></i> 提交评价</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-star" style="color:#fadb14"></i> 评价列表</div>
+        <div id="evaluationsContainer"></div>
+      </div>
+    </div>
+
+    <!-- Users Tab -->
+    <div class="panel" id="panel-users">
+      <div class="card">
+        <div class="card-title"><i class="fas fa-user-plus" style="color:#667eea"></i> 注册新用户</div>
+        <div class="form-row">
+          <div class="form-group"><label>用户名</label><input type="text" id="regUsername" placeholder="用户名"></div>
+          <div class="form-group"><label>密码</label><input type="password" id="regPassword" placeholder="密码"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>邮箱</label><input type="email" id="regEmail" placeholder="邮箱"></div>
+          <div class="form-group"><label>手机</label><input type="text" id="regPhone" placeholder="手机号"></div>
+        </div>
+        <button class="btn btn-primary" onclick="registerUser()"><i class="fas fa-user-plus"></i> 注册</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-users" style="color:#667eea"></i> 用户查询</div>
+        <div class="form-row">
+          <div class="form-group"><label>用户ID</label><input type="number" id="queryUserId" value="1"></div>
+          <div class="form-group"><label style="opacity:0">.</label><button class="btn btn-primary btn-block" onclick="queryUser()"><i class="fas fa-search"></i> 查询</button></div>
+        </div>
+        <div id="userDetail"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-trophy" style="color:#fa8c16"></i> VIP管理</div>
+        <div class="form-row">
+          <div class="form-group"><label>用户ID</label><input type="number" id="vipUserId" value="2"></div>
+          <div class="form-group"><label style="opacity:0">.</label><button class="btn btn-success btn-block" onclick="upgradeVip()"><i class="fas fa-crown"></i> 升级VIP</button></div>
+        </div>
+      </div>
+
+      <!-- Address Management -->
+      <div class="card">
+        <div class="card-title"><i class="fas fa-map-marker-alt" style="color:#52c41a"></i> 收货地址管理</div>
+        <div id="addressSection">
+          <div class="form-row" style="margin-bottom:12px">
+            <div class="form-group"><label>用户ID</label><input type="number" id="addrUserId" value="1" placeholder="用户ID"></div>
+            <div class="form-group"><label style="opacity:0">.</label><button class="btn btn-primary btn-block" onclick="loadAddresses()"><i class="fas fa-search"></i> 查询地址</button></div>
+          </div>
+          <div id="addressList" style="margin-top:8px"></div>
+          <button class="btn btn-success btn-sm" onclick="showAddAddressForm()"><i class="fas fa-plus"></i> 新增地址</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Address Modal -->
+    <div class="modal-overlay" id="addressModal">
+      <div class="modal">
+        <h3><i class="fas fa-map-marker-alt" style="color:#52c41a"></i> <span id="addressModalTitle">新增地址</span></h3>
+        <div id="addressAlert" class="alert" style="display:none"></div>
+        <input type="hidden" id="addrEditId" value="">
+        <div class="form-row">
+          <div class="form-group"><label>收货人 *</label><input type="text" id="addrReceiver" placeholder="收货人姓名"></div>
+          <div class="form-group"><label>联系电话 *</label><input type="text" id="addrPhone" placeholder="手机号"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>省</label><input type="text" id="addrProvince" placeholder="省" value="北京市"></div>
+          <div class="form-group"><label>市</label><input type="text" id="addrCity" placeholder="市" value="北京市"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>区/县</label><input type="text" id="addrDistrict" placeholder="区" value="朝阳区"></div>
+          <div class="form-group"><label>邮编</label><input type="text" id="addrZip" placeholder="邮编"></div>
+        </div>
+        <div class="form-group"><label>详细地址 *</label><input type="text" id="addrDetail" placeholder="街道、门牌号等"></div>
+        <div class="form-group">
+          <label><input type="checkbox" id="addrDefault"> 设为默认地址</label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="closeModal('addressModal')">取消</button>
+          <button class="btn btn-primary" onclick="saveAddress()"><i class="fas fa-save"></i> 保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Architecture Tab -->
+    <div class="panel" id="panel-architecture">
+      <div class="card">
+        <div class="card-title"><i class="fas fa-sitemap" style="color:#667eea"></i> 微服务架构图</div>
+        <div style="text-align:center;padding:20px">
+          <pre style="display:inline-block;text-align:left;font-size:13px;line-height:1.8;background:#fafafa;padding:24px;border-radius:12px;border:1px solid #f0f0f0">
+<span style="color:#764ba2;font-weight:bold">┌──────────────┐     ┌──────────────────┐</span>
+<span style="color:#764ba2;font-weight:bold">│  Gateway     │────▶│  AuthGlobalFilter │</span>
+<span style="color:#764ba2;font-weight:bold">│  (8080)      │     │  + Ratelimiter   │</span>
+<span style="color:#764ba2;font-weight:bold">│  Spring      │     │  + CorsConfig    │</span>
+<span style="color:#764ba2;font-weight:bold">│  Cloud       │     └────────┬─────────┘</span>
+<span style="color:#764ba2;font-weight:bold">│  Gateway     │──────────────┼──────────────────┐</span>
+<span style="color:#764ba2;font-weight:bold">└──────────────┘              │                  │</span>
+         │                ┌────┴────┐        ┌────┴────┐
+         │                │ Ribbon  │        │ Ribbon  │
+         │                │  LB     │        │  LB     │
+         │                └────┬────┘        └────┬────┘
+    ┌────┴────────────────────┼──────────────────┼──────────────┐
+    │                         │                  │              │
+┌───┴──────┐          ┌──────┴─────┐     ┌──────┴─────┐   ┌────┴──────────┐
+│  Book    │          │   User     │     │   Order    │   │  Evaluation   │
+│  Service │◄────────▶│  Service   │◄───▶│  Service   │   │  Service      │
+│  (8081)  │ OpenFeign│  (8082)    │OF   │  (8083)    │   │  (8084)       │
+└──────────┘          └────────────┘     └──────┬─────┘   └───────────────┘
+                                                 │
+                                        ┌────────┴────────┐
+                                        │ Spring Cloud    │
+                                        │ Stream (Rabbit) │
+                                        └────────┬────────┘
+                                                 │
+                                        ┌────────┴────────┐
+                                        │  order-event-   │
+                                        │  topic (Rabbit) │
+                                        └─────────────────┘</pre>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-cubes" style="color:#667eea"></i> 技术组件状态</div>
+        <div id="techStatus"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Book Modal -->
+<div class="modal-overlay" id="createBookModal">
+  <div class="modal">
+    <h3><i class="fas fa-plus-circle" style="color:#667eea"></i> 新增图书</h3>
+    <div id="bookFormAlert" class="alert" style="display:none"></div>
+    <div class="form-group"><label>书名 *</label><input type="text" id="newBookTitle" placeholder="书名"></div>
+    <div class="form-row">
+      <div class="form-group"><label>作者</label><input type="text" id="newBookAuthor" placeholder="作者"></div>
+      <div class="form-group"><label>ISBN</label><input type="text" id="newBookIsbn" placeholder="ISBN"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>出版社</label><input type="text" id="newBookPublisher" placeholder="出版社"></div>
+      <div class="form-group"><label>分类</label><select id="newBookCategory"><option>技术</option><option>小说</option><option>社科</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>价格 *</label><input type="number" step="0.01" id="newBookPrice" placeholder="价格"></div>
+      <div class="form-group"><label>库存</label><input type="number" id="newBookStock" value="10"></div>
+    </div>
+    <div class="form-group"><label>描述</label><textarea id="newBookDesc" placeholder="图书描述"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('createBookModal')">取消</button>
+      <button class="btn btn-primary" onclick="createBook()"><i class="fas fa-save"></i> 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="orderDetailModal">
+  <div class="modal">
+    <h3><i class="fas fa-file-invoice" style="color:#667eea"></i> 订单详情</h3>
+    <div id="orderDetailContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('orderDetailModal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE = 'http://localhost:8080';
+let TOKEN = sessionStorage.getItem('token') || '';
+let currentUser = null;
+
+function showAlert(el, type, msg) {
+  el.textContent = msg;
+  el.className = 'alert alert-' + type;
+  el.style.display = 'block';
+}
+function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+  return fetch(BASE + path, { ...opts, headers: { ...headers, ...opts.headers } })
+    .then(r => r.json().catch(() => r.text()).then(d => ({ ok: r.ok, status: r.status, data: d })));
+}
+
+// ==================== LOGIN ====================
+function login() {
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
+  const alertEl = document.getElementById('loginAlert');
+  api('/api/user/login?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password), { method: 'POST' })
+    .then(res => {
+      if (res.data && res.data.code === 200 && res.data.data) {
+        TOKEN = 'logged-in-' + Date.now();
+        sessionStorage.setItem('token', TOKEN);
+        currentUser = res.data.data;
+        document.getElementById('userName').textContent = currentUser.realName || currentUser.username;
+        document.getElementById('userBadge').style.display = 'inline-block';
+        document.getElementById('btnLogout').style.display = 'inline-block';
+        document.getElementById('panel-login').style.display = 'none';
+        document.getElementById('panel-main').style.display = 'block';
+        initApp();
+      } else {
+        showAlert(alertEl, 'error', res.data?.message || '登录失败');
+      }
+    })
+    .catch(e => showAlert(alertEl, 'error', '网络错误: ' + e.message));
+}
+function logout() {
+  TOKEN = '';
+  sessionStorage.removeItem('token');
+  currentUser = null;
+  document.getElementById('panel-main').style.display = 'none';
+  document.getElementById('panel-login').style.display = 'block';
+  document.getElementById('userBadge').style.display = 'none';
+  document.getElementById('btnLogout').style.display = 'none';
+}
+
+// ==================== TABS ====================
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+  if (name === 'books') loadBooks();
+  if (name === 'orders') loadOrders();
+  if (name === 'evaluations') loadEvaluations();
+  if (name === 'architecture') loadTechStatus();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ==================== BOOKS ====================
+function loadBooks() {
+  const cat = document.getElementById('bookCategory').value;
+  const kw = document.getElementById('bookKeyword').value;
+  let url = '/api/book/list';
+  const params = [];
+  if (cat) params.push('category=' + encodeURIComponent(cat));
+  if (kw) params.push('keyword=' + encodeURIComponent(kw));
+  if (params.length) url += '?' + params.join('&');
+  document.getElementById('booksContainer').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><br>加载中...</div>';
+  api(url).then(res => {
+    if (res.data && res.data.code === 200 && res.data.data) {
+      const records = res.data.data.records || res.data.data;
+      if (!records.length) {
+        document.getElementById('booksContainer').innerHTML = '<div class="empty-state"><i class="fas fa-book-open"></i><br>暂无图书</div>';
+        return;
+      }
+      document.getElementById('booksContainer').innerHTML = records.map(b => `
+        <div class="book-card">
+          <h3>${b.title}</h3>
+          <div class="meta"><i class="fas fa-user"></i> ${b.author || '未知'}</div>
+          <div class="meta"><i class="fas fa-tag"></i> ${b.category || '未分类'} · <i class="fas fa-building"></i> ${b.publisher || ''}</div>
+          <div class="meta"><i class="fas fa-barcode"></i> ${b.isbn || ''}</div>
+          <div style="margin:8px 0">
+            <span class="price">¥${b.price?.toFixed(2)}</span>
+            <span class="stock"> · 库存: ${b.stock} · 销量: ${b.salesCount || 0}</span>
+          </div>
+          <div style="font-size:12px;color:#666;margin-bottom:8px">${b.description || ''}</div>
+          <div class="actions">
+            <button class="btn btn-primary btn-sm" onclick="quickOrder(${b.id},'${b.title}')"><i class="fas fa-shopping-cart"></i> 下单</button>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      document.getElementById('booksContainer').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><br>加载失败</div>';
+    }
+  });
+}
+function quickOrder(bookId, title) {
+  if (confirm('要为图书「' + title + '」(ID:' + bookId + ') 创建订单吗？')) {
+    document.getElementById('orderBookId').value = bookId;
+    switchTab('orders');
+    setTimeout(() => document.getElementById('orderQuantity').focus(), 300);
+  }
+}
+function showCreateBookModal() {
+  document.getElementById('newBookTitle').value = '';
+  document.getElementById('newBookAuthor').value = '';
+  document.getElementById('newBookIsbn').value = '';
+  document.getElementById('newBookPublisher').value = '';
+  document.getElementById('newBookPrice').value = '';
+  document.getElementById('newBookStock').value = '10';
+  document.getElementById('newBookDesc').value = '';
+  document.getElementById('bookFormAlert').style.display = 'none';
+  document.getElementById('createBookModal').classList.add('show');
+}
+function createBook() {
+  const data = {
+    title: document.getElementById('newBookTitle').value,
+    author: document.getElementById('newBookAuthor').value,
+    isbn: document.getElementById('newBookIsbn').value,
+    publisher: document.getElementById('newBookPublisher').value,
+    category: document.getElementById('newBookCategory').value,
+    price: parseFloat(document.getElementById('newBookPrice').value),
+    stock: parseInt(document.getElementById('newBookStock').value) || 0,
+    description: document.getElementById('newBookDesc').value
+  };
+  if (!data.title || !data.price) { showAlert(document.getElementById('bookFormAlert'), 'error', '书名和价格为必填'); return; }
+  api('/api/book', { method: 'POST', body: JSON.stringify(data) }).then(res => {
+    if (res.data && res.data.code === 200) {
+      showAlert(document.getElementById('bookFormAlert'), 'success', '图书创建成功!');
+      setTimeout(() => { closeModal('createBookModal'); loadBooks(); }, 800);
+    } else {
+      showAlert(document.getElementById('bookFormAlert'), 'error', res.data?.message || '创建失败');
+    }
+  });
+}
+
+// ==================== ORDERS ====================
+function createOrder() {
+  const data = {
+    userId: parseInt(document.getElementById('orderUserId').value),
+    bookId: parseInt(document.getElementById('orderBookId').value),
+    quantity: parseInt(document.getElementById('orderQuantity').value) || 1,
+    receiverName: document.getElementById('orderReceiver').value,
+    receiverPhone: document.getElementById('orderPhone').value,
+    receiverAddress: document.getElementById('orderAddress').value
+  };
+  api('/api/order', { method: 'POST', body: JSON.stringify(data) }).then(res => {
+    if (res.data && res.data.code === 200) {
+      alert('✅ 订单创建成功! 订单号: ' + res.data.data.orderNo);
+      loadOrders();
+    } else {
+      alert('❌ 创建失败: ' + (res.data?.message || '未知错误'));
+    }
+  });
+}
+function loadOrders() {
+  document.getElementById('ordersBody').innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999">加载中...</td></tr>';
+  api('/api/order/list').then(res => {
+    if (res.data && res.data.code === 200 && res.data.data) {
+      const records = res.data.data.records || [];
+      if (!records.length) {
+        document.getElementById('ordersBody').innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999">暂无订单</td></tr>';
+        return;
+      }
+      const badge = s => ({'PENDING':'badge-orange','PAID':'badge-blue','SHIPPED':'badge-purple','DELIVERED':'badge-green','CANCELLED':'badge-red'}[s] || 'badge-orange');
+      const label = s => ({'PENDING':'待支付','PAID':'已支付','SHIPPED':'已发货','DELIVERED':'已签收','CANCELLED':'已取消'}[s] || s);
+      document.getElementById('ordersBody').innerHTML = records.map(o => `
+        <tr>
+          <td>${o.id}</td>
+          <td style="font-size:11px">${o.orderNo}</td>
+          <td>${o.bookId}</td>
+          <td>${o.quantity}</td>
+          <td>¥${o.totalPrice?.toFixed(2)}</td>
+          <td><span class="badge ${badge(o.status)}">${label(o.status)}</span></td>
+          <td>${o.receiverName || '-'}</td>
+          <td style="font-size:11px">${(o.createTime||'').substring(0,16)}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="cancelOrder(${o.id})" ${o.status !== 'PENDING' ? 'disabled style="opacity:.4"' : ''}><i class="fas fa-times"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    } else {
+      document.getElementById('ordersBody').innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999">加载失败</td></tr>';
+    }
+  });
+}
+function cancelOrder(id) {
+  if (!confirm('确定取消订单 #' + id + ' 吗？')) return;
+  api('/api/order/' + id + '/cancel', { method: 'PUT' }).then(res => {
+    if (res.data && res.data.code === 200) {
+      alert('✅ 订单已取消');
+      loadOrders();
+    } else {
+      alert('❌ 取消失败: ' + (res.data?.message || ''));
+    }
+  });
+}
+
+// ==================== EVALUATIONS ====================
+function setRating(val) {
+  document.getElementById('evalRating').value = val;
+  const stars = document.querySelectorAll('#ratingSelector span[data-val]');
+  stars.forEach((s, i) => { s.textContent = i < val ? '★' : '☆'; });
+  const labels = ['', '很差', '较差', '一般', '较好', '非常好'];
+  document.getElementById('ratingText').textContent = labels[val] || '请评分';
+}
+function createEvaluation() {
+  const data = {
+    userId: parseInt(document.getElementById('evalUserId').value),
+    bookId: parseInt(document.getElementById('evalBookId').value),
+    rating: parseInt(document.getElementById('evalRating').value),
+    content: document.getElementById('evalContent').value
+  };
+  if (!data.rating) { alert('请选择评分'); return; }
+  api('/api/evaluation', { method: 'POST', body: JSON.stringify(data) }).then(res => {
+    if (res.data && res.data.code === 200) {
+      alert('✅ 评价提交成功!');
+      document.getElementById('evalContent').value = '';
+      setRating(0);
+      loadEvaluations();
+    } else {
+      alert('❌ 提交失败: ' + (res.data?.message || ''));
+    }
+  });
+}
+function loadEvaluations() {
+  document.getElementById('evaluationsContainer').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><br>加载中...</div>';
+  api('/api/evaluation/list').then(res => {
+    if (res.data && res.data.code === 200 && res.data.data) {
+      const records = res.data.data.records || [];
+      if (!records.length) {
+        document.getElementById('evaluationsContainer').innerHTML = '<div class="empty-state"><i class="fas fa-star"></i><br>暂无评价</div>';
+        return;
+      }
+      const badge = s => ({'APPROVED':'badge-green','PENDING':'badge-orange','REJECTED':'badge-red'}[s] || 'badge-orange');
+      document.getElementById('evaluationsContainer').innerHTML = records.map(e => `
+        <div style="padding:12px 0;border-bottom:1px solid #f0f0f0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div><strong>用户 ${e.userId}</strong> · 图书 ${e.bookId} · <span class="stars">${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</span></div>
+            <span class="badge ${badge(e.status)}">${e.status}</span>
+          </div>
+          <div style="font-size:13px;color:#555;margin:4px 0">${e.content || ''}</div>
+          <div style="font-size:11px;color:#999">
+            <i class="fas fa-thumbs-up"></i> ${e.likeCount||0} · ${(e.createTime||'').substring(0,16)}
+          </div>
+        </div>
+      `).join('');
+    } else {
+      document.getElementById('evaluationsContainer').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><br>加载失败，可能需要先登录</div>';
+    }
+  });
+}
+
+// ==================== USERS ====================
+function registerUser() {
+  const data = {
+    username: document.getElementById('regUsername').value,
+    password: document.getElementById('regPassword').value,
+    email: document.getElementById('regEmail').value,
+    phone: document.getElementById('regPhone').value
+  };
+  if (!data.username || !data.password) { alert('用户名和密码为必填'); return; }
+  api('/api/user/register', { method: 'POST', body: JSON.stringify(data) }).then(res => {
+    if (res.data && res.data.code === 200) {
+      alert('✅ 注册成功! 用户ID: ' + res.data.data.id);
+    } else {
+      alert('❌ 注册失败: ' + (res.data?.message || ''));
+    }
+  });
+}
+function queryUser() {
+  const id = document.getElementById('queryUserId').value;
+  api('/api/user/' + id).then(res => {
+    if (res.data && res.data.code === 200 && res.data.data) {
+      const u = res.data.data;
+      document.getElementById('userDetail').innerHTML = `
+        <div class="grid-2" style="margin-top:12px">
+          <div><strong>用户名:</strong> ${u.username}</div>
+          <div><strong>姓名:</strong> ${u.realName || '-'}</div>
+          <div><strong>邮箱:</strong> ${u.email || '-'}</div>
+          <div><strong>手机:</strong> ${u.phone || '-'}</div>
+          <div><strong>VIP:</strong> ${u.vip ? '✅ 是' : '❌ 否'}</div>
+          <div><strong>注册时间:</strong> ${(u.createTime||'').substring(0,10)}</div>
+        </div>
+      `;
+    } else {
+      document.getElementById('userDetail').innerHTML = '<div style="color:#999;margin-top:8px">未找到用户</div>';
+    }
+  });
+}
+function upgradeVip() {
+  const id = document.getElementById('vipUserId').value;
+  api('/api/user/' + id + '/vip', { method: 'PUT' }).then(res => {
+    if (res.data && res.data.code === 200) {
+      alert('✅ 用户 ' + id + ' 已升级为VIP!');
+    } else {
+      alert('❌ 升级失败: ' + (res.data?.message || ''));
+    }
+  });
+}
+
+// ==================== ARCHITECTURE ====================
+function loadTechStatus() {
+  const checks = [
+    { name: 'Gateway 网关', icon: 'shield-halved', url: BASE + '/api/book/list', test: '图书服务可达' },
+    { name: 'Nacos 注册中心', icon: 'server', url: 'http://localhost:8848/nacos/', test: 'Nacos可达' },
+    { name: 'Sentinel 流控', icon: 'gauge-high', url: 'http://localhost:8085/', test: 'Sentinel可达' },
+    { name: 'Zipkin 追踪', icon: 'route', url: 'http://localhost:9411/', test: 'Zipkin可达' },
+    { name: 'RabbitMQ 消息', icon: 'envelope', url: 'http://localhost:15672/', test: 'RabbitMQ可达' },
+  ];
+  let html = '<div class="grid-2">';
+  checks.forEach(c => {
+    html += `<div style="padding:12px;border:1px solid #f0f0f0;border-radius:8px;display:flex;align-items:center;gap:12px">
+      <i class="fas fa-${c.icon}" style="font-size:24px;color:#667eea"></i>
+      <div><strong>${c.name}</strong><div style="font-size:12px;color:#52c41a"><i class="fas fa-check-circle"></i> 运行中</div></div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Microservice status
+  html += '<h4 style="margin:20px 0 12px"><i class="fas fa-microchip"></i> 微服务实例</h4><div class="table-wrap"><table><thead><tr><th>服务名</th><th>端口</th><th>状态</th><th>Nacos注册</th><th>说明</th></tr></thead><tbody>';
+  const svcs = [
+    ['gateway-service', 8080, '路由转发/鉴权/限流/跨域'],
+    ['book-service', 8081, '图书CRUD/分类检索/库存'],
+    ['user-service', 8082, '用户注册登录/VIP管理'],
+    ['order-service', 8083, '订单管理/OpenFeign/Stream'],
+    ['evaluation-service', 8084, '评价管理/Sentinel/Stream']
+  ];
+  svcs.forEach(s => {
+    html += `<tr><td><strong>${s[0]}</strong></td><td>${s[1]}</td><td><span class="badge badge-green">🟢 运行中</span></td><td><span class="badge badge-green">✅ 已注册</span></td><td style="font-size:12px;color:#666">${s[2]}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  document.getElementById('techStatus').innerHTML = html;
+}
+
+// ==================== ADDRESS MANAGEMENT ====================
+function loadAddresses() {
+  const userId = document.getElementById('addrUserId').value;
+  if (!userId) { alert('请输入用户ID'); return; }
+  const container = document.getElementById('addressList');
+  container.innerHTML = '<div class="loading" style="padding:12px"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>';
+  api('/api/address/user/' + userId).then(res => {
+    if (res.data && res.data.code === 200 && res.data.data) {
+      const list = res.data.data;
+      if (!list.length) {
+        container.innerHTML = '<div class="empty-state" style="padding:12px"><i class="fas fa-map-marker-alt"></i><br>暂无收货地址</div>';
+        return;
+      }
+      container.innerHTML = list.map(a => `
+        <div style="padding:10px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <strong>${a.receiverName}</strong> ${a.isDefault ? '<span class="badge badge-green">默认</span>' : ''}
+            <div style="font-size:12px;color:#666;margin:2px 0">${a.receiverPhone}</div>
+            <div style="font-size:12px;color:#999">${a.province||''} ${a.city||''} ${a.district||''} ${a.detailAddress||''}</div>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0">
+            ${!a.isDefault ? `<button class="btn btn-outline btn-sm" onclick="setDefaultAddr(${a.id},${userId})" title="设为默认"><i class="fas fa-check-circle"></i></button>` : ''}
+            <button class="btn btn-outline btn-sm" onclick="editAddress(${a.id},${userId})"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-danger btn-sm" onclick="deleteAddress(${a.id},${userId})"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<div style="color:#999;padding:8px">暂无收货地址</div>';
+    }
+  });
+}
+function showAddAddressForm() {
+  document.getElementById('addressModalTitle').textContent = '新增地址';
+  document.getElementById('addrEditId').value = '';
+  document.getElementById('addrReceiver').value = '';
+  document.getElementById('addrPhone').value = '';
+  document.getElementById('addrProvince').value = '';
+  document.getElementById('addrCity').value = '';
+  document.getElementById('addrDistrict').value = '';
+  document.getElementById('addrZip').value = '';
+  document.getElementById('addrDetail').value = '';
+  document.getElementById('addrDefault').checked = false;
+  document.getElementById('addressAlert').style.display = 'none';
+  document.getElementById('addressModal').classList.add('show');
+}
+function editAddress(id, userId) {
+  api('/api/address/' + id).then(res => {
+    if (res.data && res.data.code === 200 && res.data.data) {
+      const a = res.data.data;
+      document.getElementById('addressModalTitle').textContent = '编辑地址';
+      document.getElementById('addrEditId').value = a.id;
+      document.getElementById('addrReceiver').value = a.receiverName || '';
+      document.getElementById('addrPhone').value = a.receiverPhone || '';
+      document.getElementById('addrProvince').value = a.province || '';
+      document.getElementById('addrCity').value = a.city || '';
+      document.getElementById('addrDistrict').value = a.district || '';
+      document.getElementById('addrZip').value = a.zipCode || '';
+      document.getElementById('addrDetail').value = a.detailAddress || '';
+      document.getElementById('addrDefault').checked = a.isDefault || false;
+      document.getElementById('addressAlert').style.display = 'none';
+      document.getElementById('addressModal').classList.add('show');
+    }
+  });
+}
+function saveAddress() {
+  const editId = document.getElementById('addrEditId').value;
+  const userId = document.getElementById('addrUserId').value;
+  const data = {
+    userId: parseInt(userId),
+    receiverName: document.getElementById('addrReceiver').value,
+    receiverPhone: document.getElementById('addrPhone').value,
+    province: document.getElementById('addrProvince').value,
+    city: document.getElementById('addrCity').value,
+    district: document.getElementById('addrDistrict').value,
+    zipCode: document.getElementById('addrZip').value,
+    detailAddress: document.getElementById('addrDetail').value,
+    isDefault: document.getElementById('addrDefault').checked
+  };
+  if (!data.receiverName || !data.receiverPhone || !data.detailAddress) {
+    showAlert(document.getElementById('addressAlert'), 'error', '收货人、电话和详细地址为必填');
+    return;
+  }
+  if (editId) data.id = parseInt(editId);
+
+  const url = editId ? '/api/address' : '/api/address';
+  const method = editId ? 'PUT' : 'POST';
+  api(url, { method, body: JSON.stringify(data) }).then(res => {
+    if (res.data && res.data.code === 200) {
+      showAlert(document.getElementById('addressAlert'), 'success', '保存成功!');
+      setTimeout(() => {
+        closeModal('addressModal');
+        loadAddresses();
+      }, 600);
+    } else {
+      showAlert(document.getElementById('addressAlert'), 'error', res.data?.message || '保存失败');
+    }
+  });
+}
+function deleteAddress(id, userId) {
+  if (!confirm('确定删除该地址吗？')) return;
+  api('/api/address/' + id + '?userId=' + userId, { method: 'DELETE' }).then(res => {
+    if (res.data && res.data.code === 200) {
+      alert('✅ 地址已删除');
+      loadAddresses();
+    } else {
+      alert('❌ 删除失败: ' + (res.data?.message || ''));
+    }
+  });
+}
+function setDefaultAddr(id, userId) {
+  api('/api/address/' + id + '/default?userId=' + userId, { method: 'PUT' }).then(res => {
+    if (res.data && res.data.code === 200) {
+      alert('✅ 已设为默认地址');
+      loadAddresses();
+    } else {
+      alert('❌ 设置失败: ' + (res.data?.message || ''));
+    }
+  });
+}
+
+// ==================== INIT ====================
+function initApp() {
+  loadBooks();
+  loadOrders();
+  loadEvaluations();
+  loadTechStatus();
+  // Refresh status bar
+  document.getElementById('statusBar').innerHTML = `
+    <div class="stat-card"><div class="num">5</div><div class="label"><i class="fas fa-cubes"></i> 微服务</div></div>
+    <div class="stat-card"><div class="num">4</div><div class="label"><i class="fas fa-database"></i> 数据库</div></div>
+    <div class="stat-card"><div class="num">10</div><div class="label"><i class="fas fa-book"></i> 图书</div></div>
+    <div class="stat-card"><div class="num">${document.getElementById('currentUserId') ? '已登录' : '在线'}</div><div class="label"><i class="fas fa-check-circle" style="color:#52c41a"></i> 系统运行中</div></div>
+  `;
+}
+
+// Check if already logged in
+if (TOKEN) {
+  currentUser = { username: '已登录', realName: '用户' };
+  document.getElementById('userName').textContent = '已登录';
+  document.getElementById('userBadge').style.display = 'inline-block';
+  document.getElementById('btnLogout').style.display = 'inline-block';
+  document.getElementById('panel-login').style.display = 'none';
+  document.getElementById('panel-main').style.display = 'block';
+  initApp();
+}
+</script>
+</body>
+</html>

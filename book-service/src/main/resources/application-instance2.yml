@@ -1,0 +1,14 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: book-service
+
+---
+# 此配置文件用于启动 book-service 第二个实例，验证 Ribbon 负载均衡
+# 使用方法:
+#   java -jar book-service/target/book-service-1.0.0.jar --spring.profiles.active=instance2
+#
+# 两个实例(8081, 8086)会同时注册到 Nacos 的 book-service 名下
+# Gateway 通过 lb://book-service 自动在两个实例间负载均衡

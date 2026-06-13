@@ -1,0 +1,3 @@
+VHOST: /
+QUEUE: order-event-topic.evaluation-group
+INDEX: v2

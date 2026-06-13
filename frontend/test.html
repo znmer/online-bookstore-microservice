@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>微服务端口连通性测试</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Consolas', 'Courier New', monospace; background: #1a1b26; color: #a9b1d6; padding: 20px; }
+h1 { font-size: 18px; margin-bottom: 4px; color: #7aa2f7; }
+.subtitle { color: #565f89; font-size: 12px; margin-bottom: 16px; }
+.controls { margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.controls button { background: #7aa2f7; color: #1a1b26; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; font-family: inherit; }
+.controls button:hover { background: #89b4fa; }
+.controls button.danger { background: #f7768e; }
+.controls button.danger:hover { background: #ff9aa8; }
+.controls button.outline { background: transparent; color: #7aa2f7; border: 1px solid #7aa2f7; }
+.controls button.outline:hover { background: #24283b; }
+.summary { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.stat { background: #24283b; border-radius: 8px; padding: 10px 16px; border: 1px solid #3b4261; text-align: center; min-width: 70px; }
+.stat .num { font-size: 22px; font-weight: bold; }
+.stat .lbl { font-size: 10px; color: #565f89; margin-top: 2px; }
+.timestamp { color: #565f89; font-size: 11px; margin-bottom: 12px; }
+
+/* Section */
+.section { margin-bottom: 16px; }
+.section-title { font-size: 13px; color: #565f89; margin-bottom: 6px; font-weight: bold; letter-spacing: 0.5px; }
+
+/* Cards */
+.row { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 6px; }
+.card { background: #24283b; border-radius: 8px; border: 1px solid #3b4261; overflow: hidden; }
+.card-header { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.card-header .name { font-weight: bold; }
+.card-header .name .port { color: #565f89; font-weight: normal; }
+.card-header .name .proto { color: #565f89; font-size: 10px; font-weight: normal; margin-left: 4px; }
+.card-body { padding: 0 12px 8px 12px; font-size: 12px; }
+
+.ep { display: flex; align-items: center; padding: 5px 6px; border-radius: 4px; font-size: 12px; gap: 6px; }
+.ep:hover { background: #1a1b26; }
+.ep-icon { width: 18px; text-align: center; }
+.ep-method { width: 38px; font-size: 9px; font-weight: bold; padding: 1px 4px; border-radius: 3px; text-align: center; flex-shrink: 0; }
+.method-GET { background: #1f3b2b; color: #73daca; }
+.method-POST { background: #1f3554; color: #7dcfff; }
+.method-PUT { background: #3b3520; color: #e0af68; }
+.ep-path { color: #7aa2f7; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ep-desc { color: #565f89; font-size: 10px; flex-shrink: 0; }
+.ep-status { min-width: 60px; text-align: right; font-weight: bold; font-size: 11px; flex-shrink: 0; }
+.ep-time { color: #565f89; min-width: 42px; text-align: right; font-size: 10px; flex-shrink: 0; }
+
+/* Direct-port card without endpoints */
+.direct-card { background: #24283b; border-radius: 8px; padding: 12px; border: 1px solid #3b4261; display: flex; justify-content: space-between; align-items: center; }
+.direct-card .left { display: flex; align-items: center; gap: 8px; }
+.direct-card .left .icon { font-size: 16px; }
+.direct-card .left .info .svc { font-weight: bold; font-size: 13px; }
+.direct-card .left .info .meta { font-size: 10px; color: #565f89; }
+.direct-card .right { text-align: right; }
+
+.status-up { color: #73daca; }
+.status-down { color: #f7768e; }
+.status-skip { color: #e0af68; }
+.status-idle { color: #565f89; }
+
+/* Custom test */
+.custom-area { background: #24283b; border-radius: 8px; padding: 14px; border: 1px solid #3b4261; margin-top: 16px; }
+.custom-area h3 { font-size: 13px; margin-bottom: 8px; color: #7aa2f7; }
+.custom-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.custom-row select, .custom-row input { background: #1a1b26; border: 1px solid #3b4261; color: #a9b1d6; padding: 6px 10px; border-radius: 4px; font-size: 12px; font-family: inherit; }
+.custom-row input { flex: 1; min-width: 200px; }
+.custom-row .btn-go { background: #e0af68; color: #1a1b26; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+.custom-row .btn-go:hover { background: #e9b97a; }
+#customResult { margin-top: 8px; font-size: 12px; display: none; padding: 8px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
+
+@media (max-width: 600px) {
+  .row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<h1>🔌 微服务端口连通性测试</h1>
+<div class="subtitle">
+  绿色=在线 · 红色=端口不通 · 橙色=需要登录验证 · 灰色=未测
+  <span style="margin-left:12px;color:#565f89">| 跨域端口用 <code>no-cors</code> 模式检测通断</span>
+</div>
+
+<div class="controls">
+  <button onclick="runAll()">▶ 测试全部</button>
+  <button class="outline" onclick="runGateway()">🌐 Gateway 接口</button>
+  <button class="outline" onclick="runDirect()">📡 直连端口</button>
+  <button class="danger" onclick="clearAll()">🗑 清空</button>
+</div>
+
+<div class="summary">
+  <div class="stat"><div class="num" id="totalCount" style="color:#565f89">0</div><div class="lbl">总测试</div></div>
+  <div class="stat"><div class="num" id="passCount" style="color:#73daca">0</div><div class="lbl">在线</div></div>
+  <div class="stat"><div class="num" id="failCount" style="color:#f7768e">0</div><div class="lbl">断连</div></div>
+  <div class="stat"><div class="num" id="skipCount" style="color:#e0af68">0</div><div class="lbl">需登录</div></div>
+</div>
+
+<div class="timestamp" id="timestamp">⏱ 就绪</div>
+
+<!-- Section 1: Gateway API 测试 -->
+<div class="section">
+  <div class="section-title">🌐 Gateway 接口测试 (localhost:8080) — 有CORS，可读响应</div>
+  <div class="row" id="gatewayResults"></div>
+</div>
+
+<!-- Section 2: 直连端口扫描 -->
+<div class="section">
+  <div class="section-title">📡 直连端口扫描 (no-cors模式检测通断，不可读响应体)</div>
+  <div class="row" id="directResults"></div>
+</div>
+
+<!-- Custom Test -->
+<div class="custom-area">
+  <h3>🧪 自定义测试</h3>
+  <div class="custom-row">
+    <select id="customMethod"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select>
+    <input type="text" id="customPath" placeholder="/api/..." value="/api/book/1">
+    <input type="text" id="customBody" placeholder="JSON body" style="flex:0.5;min-width:120px">
+    <button class="btn-go" onclick="customTest()">➤ 发送</button>
+  </div>
+  <div id="customResult"></div>
+</div>
+
+<script>
+const BASE = 'http://localhost:8080';
+let pass = 0, fail = 0, skip = 0, total = 0;
+let gState = {}, dState = {};
+
+const GATEWAY_EPS = [
+  { method:'GET',    path:'/api/book/list',                   desc:'图书列表', group:'book-service(8081)' },
+  { method:'GET',    path:'/api/book/1',                      desc:'图书详情', group:'book-service(8081)' },
+  { method:'GET',    path:'/api/book/category/技术',          desc:'分类查询', group:'book-service(8081)' },
+  { method:'POST',   path:'/api/user/login?username=admin&password=123456', desc:'用户登录', group:'user-service(8082)' },
+  { method:'GET',    path:'/api/user/1',                      desc:'用户查询', group:'user-service(8082)', auth:true },
+  { method:'GET',    path:'/api/order/list',                  desc:'订单列表', group:'order-service(8083)', auth:true },
+  { method:'GET',    path:'/api/evaluation/list',             desc:'评价列表', group:'evaluation-service(8084)', auth:true },
+  { method:'GET',    path:'/api/evaluation/book/1/rating',    desc:'图书评分', group:'evaluation-service(8084)', auth:true },
+];
+
+const DIRECT_PORTS = [
+  { name:'Nacos',           port:8848,  icon:'📦', desc:'注册中心/配置中心', note: '需浏览器打开 http://localhost:8848/nacos/' },
+  { name:'Sentinel',        port:8085,  icon:'🛡️', desc:'流量控制面板',     note: '需登录 sentinel/sentinel' },
+  { name:'Zipkin',          port:9411,  icon:'🔗', desc:'链路追踪',         note: '浏览器打开 http://localhost:9411' },
+  { name:'RabbitMQ',        port:15672, icon:'🐇', desc:'消息队列管理',     note: '需登录 guest/guest' },
+  { name:'book-service',    port:8081,  icon:'📖', desc:'图书服务' },
+  { name:'user-service',    port:8082,  icon:'👤', desc:'用户服务' },
+  { name:'order-service',   port:8083,  icon:'📋', desc:'订单服务' },
+  { name:'evaluation-service', port:8084, icon:'⭐', desc:'评价服务' },
+];
+
+// ========== Helpers ==========
+async function api(method, path, body) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  const start = performance.now();
+  try {
+    const opts = { method, signal: ctrl.signal, headers: {} };
+    if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = body; }
+    const res = await fetch(BASE + path, opts);
+    clearTimeout(timer);
+    const ms = Math.round(performance.now() - start);
+    const text = await res.text();
+    let detail = '';
+    try {
+      const j = JSON.parse(text);
+      if (j.code === 200) detail = j.data?.records ? j.data.records.length+'条' : j.data?.title || j.data?.username || '';
+      else detail = j.message || '';
+    } catch(e) { detail = res.statusText; }
+    return { ok: res.ok, status: res.status, time: ms+'ms', detail, raw: text.substring(0,300) };
+  } catch(e) {
+    clearTimeout(timer);
+    const ms = Math.round(performance.now() - start);
+    return { ok: false, status:'—', time: ms+'ms', detail: e.name==='AbortError'?'⏱ 超时':e.message };
+  }
+}
+
+async function pingPort(host, port, path) {
+  const url = 'http://' + host + ':' + port + (path || '/');
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 3000);
+  const start = performance.now();
+  try {
+    // no-cors: 浏览器发请求但不暴露响应体，只告诉我们通不通
+    await fetch(url, { mode: 'no-cors', signal: ctrl.signal });
+    clearTimeout(timer);
+    const ms = Math.round(performance.now() - start);
+    return { ok: true, time: ms+'ms' };
+  } catch(e) {
+    clearTimeout(timer);
+    const ms = Math.round(performance.now() - start);
+    if (e.name === 'AbortError') return { ok: false, time: ms+'ms', detail: '⏱ 超时(3s)' };
+    // TypeError = 连接被拒绝 / DNS不通
+    const msg = e.message.includes('Failed to fetch') || e.message.includes('NetworkError')
+      ? '🔴 端口不通或连接被拒绝' : e.message;
+    return { ok: false, time: ms+'ms', detail: msg };
+  }
+}
+
+// ========== Render ==========
+function renderGateway() {
+  let html = '';
+  // Group by backend service
+  const groups = {};
+  for (let i = 0; i < GATEWAY_EPS.length; i++) {
+    const ep = GATEWAY_EPS[i];
+    const g = ep.group || 'gateway';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(i);
+  }
+
+  for (const [group, indices] of Object.entries(groups)) {
+    let body = '';
+    let allOk = true, anySkipped = false;
+    indices.forEach(i => {
+      const ep = GATEWAY_EPS[i];
+      const r = gState[i];
+      const icon = r ? (r.ok ? '✅' : r.skipped ? '⚠️' : '❌') : '⏸';
+      const cls = r ? (r.ok ? 'status-up' : r.skipped ? 'status-skip' : 'status-down') : 'status-idle';
+      const stat = r ? (r.ok ? (r.skipped?'需Auth':'正常') : '失败') : '未测';
+      const detail = r ? (r.detail ? (' ' + r.detail) : '') : '';
+      if (r && !r.ok) allOk = false;
+      if (r && r.skipped) anySkipped = true;
+      body += `<div class="ep">
+        <div class="ep-icon">${icon}</div>
+        <div class="ep-method method-${ep.method}">${ep.method}</div>
+        <div class="ep-path">${ep.path}</div>
+        <div class="ep-desc">${ep.desc}</div>
+        <div class="ep-time">${r?.time||''}</div>
+        <div class="ep-status ${cls}">${stat}${detail?' · '+detail.substring(0,30):''}</div>
+      </div>`;
+    });
+    const hdrIcon = allOk ? '✅' : (anySkipped ? '⚠️' : '❌');
+    const hdrCls = allOk ? 'status-up' : (anySkipped ? 'status-skip' : 'status-down');
+    html += `<div class="card">
+      <div class="card-header">
+        <div class="name">→ ${group} <span class="port">via Gateway</span></div>
+        <div class="${hdrCls}" style="font-weight:bold">${hdrIcon}</div>
+      </div>
+      <div class="card-body">${body}</div>
+    </div>`;
+  }
+  document.getElementById('gatewayResults').innerHTML = html || '<div style="color:#565f89;grid-column:1/-1;padding:20px;text-align:center">点击「测试全部」或「Gateway接口」</div>';
+}
+
+function renderDirect() {
+  let html = '';
+  for (const svc of DIRECT_PORTS) {
+    const r = dState[svc.port];
+    const icon = r ? (r.ok ? '🟢' : '🔴') : '⚪';
+    const cls = r ? (r.ok ? 'status-up' : 'status-down') : 'status-idle';
+    const stat = r ? (r.ok ? '在线' : '断连') : '未测';
+    const detail = r ? (r.detail ? ' · ' + r.detail : '') : '';
+    const note = svc.note ? `<span style="color:#565f89;font-size:10px">${svc.note}</span>` : '';
+    html += `<div class="card">
+      <div class="card-header">
+        <div class="name"><span style="margin-right:4px">${svc.icon}</span>${svc.name} <span class="port">:${svc.port}</span><span class="proto">${svc.desc}</span></div>
+        <div class="${cls}" style="font-weight:bold">${icon} ${stat}${r?' · '+r.time:''}</div>
+      </div>
+      <div class="card-body">${note}${detail?`<div style="color:#565f89;font-size:10px">${detail}</div>`:''}</div>
+    </div>`;
+  }
+  document.getElementById('directResults').innerHTML = html || '<div style="color:#565f89;grid-column:1/-1;padding:20px;text-align:center">点击「测试全部」或「直连端口」</div>';
+}
+
+function updateStats() {
+  document.getElementById('totalCount').textContent = total;
+  document.getElementById('passCount').textContent = pass;
+  document.getElementById('failCount').textContent = fail;
+  document.getElementById('skipCount').textContent = skip;
+}
+
+// ========== Actions ==========
+async function runGateway() {
+  document.getElementById('timestamp').textContent = '⏳ Gateway 接口测试中...';
+  for (let i = 0; i < GATEWAY_EPS.length; i++) {
+    const ep = GATEWAY_EPS[i];
+    total++;
+    const res = await api(ep.method, ep.path, ep.body);
+    if (ep.auth && res.status === 401) {
+      res.ok = true; res.skipped = true; res.detail = '服务正常，需Authorization头';
+      skip++;
+    } else if (res.ok) { pass++; } else { fail++; }
+    gState[i] = res;
+    renderGateway(); updateStats();
+  }
+  document.getElementById('timestamp').textContent = '✅ Gateway测试完成 ' + new Date().toLocaleTimeString();
+}
+
+async function runDirect() {
+  document.getElementById('timestamp').textContent = '⏳ 端口扫描中...';
+  // Use the same host as the page (works for localhost testing)
+  const host = 'localhost';
+  for (const svc of DIRECT_PORTS) {
+    total++;
+    const res = await pingPort(host, svc.port);
+    if (res.ok) pass++; else fail++;
+    dState[svc.port] = res;
+    renderDirect(); updateStats();
+  }
+  document.getElementById('timestamp').textContent = '📡 端口扫描完成 ' + new Date().toLocaleTimeString();
+}
+
+async function runAll() {
+  pass = 0; fail = 0; skip = 0; total = 0;
+  gState = {}; dState = {};
+  renderGateway(); renderDirect(); updateStats();
+  await runGateway();
+  await runDirect();
+  document.getElementById('timestamp').textContent = '✅ 全部完成 ' + new Date().toLocaleTimeString() + ' | 在线'+pass+' 断连'+fail+' 需登录'+skip;
+}
+
+function clearAll() {
+  pass=0; fail=0; skip=0; total=0;
+  gState={}; dState={};
+  document.getElementById('gatewayResults').innerHTML = '';
+  document.getElementById('directResults').innerHTML = '';
+  updateStats();
+  document.getElementById('timestamp').textContent = '⏱ 已清空';
+}
+
+async function customTest() {
+  const method = document.getElementById('customMethod').value;
+  const path = document.getElementById('customPath').value;
+  const body = document.getElementById('customBody').value;
+  const el = document.getElementById('customResult');
+  el.style.display = 'block';
+  el.textContent = '⏳ 请求中...';
+  const res = await api(method, path, body || null);
+  if (res.ok) {
+    el.style.border = '1px solid #73daca';
+    el.innerHTML = `✅ ${method} ${path}\n状态码: ${res.status}\n耗时: ${res.time}\n返回:\n${res.raw}`;
+  } else {
+    el.style.border = '1px solid #f7768e';
+    el.innerHTML = `❌ ${method} ${path}\n状态码: ${res.status||'—'}\n耗时: ${res.time}\n${res.detail}`;
+  }
+}
+
+// Auto-run on load
+runAll();
+</script>
+</body>
+</html>
